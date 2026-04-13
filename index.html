@@ -141,13 +141,88 @@
     <!-- Agents Tab -->
     <div id="agents-tab" class="tab-content hidden fade-transition">
         <div class="max-w-7xl mx-auto px-6 py-8">
-            <div class="mb-6">
+            <div class="mb-8">
                 <h2 class="text-2xl font-bold gradient-text mb-2">Agent Fleet</h2>
                 <p class="text-gray-400">Real-time status and configuration from OpenClaw</p>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="agents-grid">
-                <!-- Agents will be dynamically loaded here -->
+            <!-- Agent Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8" id="agents-grid">
+                <!-- Agent cards will be dynamically loaded here -->
+            </div>
+            
+            <!-- Task Statistics -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="glassmorphism glow-border rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Task Statistics</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Tasks Today</span>
+                            <span class="text-white" id="tasks-today">Loading...</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Tasks This Week</span>
+                            <span class="text-white" id="tasks-week">Loading...</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Success Rate</span>
+                            <span class="text-green-400" id="success-rate">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="glassmorphism glow-border rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Most Active Agent</h3>
+                    <div class="text-center">
+                        <div class="text-2xl mb-2" id="most-active-emoji">🤖</div>
+                        <div class="text-lg font-semibold" id="most-active-name">Loading...</div>
+                        <div class="text-gray-400 text-sm" id="most-active-tasks">Loading...</div>
+                    </div>
+                </div>
+                
+                <div class="glassmorphism glow-border rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Model Distribution</h3>
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">Local Models</span>
+                            <span class="text-green-400" id="local-usage">Loading...</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">Cloud APIs</span>
+                            <span class="text-purple-400" id="cloud-usage">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity Feed -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="glassmorphism glow-border rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Recent Activity</h3>
+                    <div class="space-y-3 max-h-96 overflow-y-auto" id="activity-feed">
+                        <div class="text-gray-400 text-sm text-center py-8">Loading activity...</div>
+                    </div>
+                </div>
+                
+                <div class="glassmorphism glow-border rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Model Usage Today</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-white/10">
+                                    <th class="text-left py-2 text-gray-400">Agent</th>
+                                    <th class="text-left py-2 text-gray-400">Model</th>
+                                    <th class="text-right py-2 text-gray-400">Tasks</th>
+                                </tr>
+                            </thead>
+                            <tbody id="model-usage-table">
+                                <tr>
+                                    <td colspan="3" class="text-center py-8 text-gray-400">Loading usage data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -273,128 +348,367 @@
 
     <script>
         let openClawConfig = null;
+        let sessionData = null;
+        let activityData = [];
 
-        // Load OpenClaw configuration
+        // Agent definitions with specific configurations
+        const agentDefinitions = {
+            'saia': {
+                emoji: '🤖',
+                role: 'Strategic Orchestrator',
+                model: 'anthropic/claude-sonnet-4-20250514',
+                displayName: 'SAIA Manager',
+                glowColor: '#7C3AED',
+                type: 'cloud'
+            },
+            'coding': {
+                emoji: '⚡',
+                role: 'Full Stack Developer',
+                model: 'google/gemini-2.5-flash',
+                displayName: 'Coding Agent',
+                glowColor: '#06B6D4',
+                type: 'cloud'
+            },
+            'primary-worker': {
+                emoji: '🔧',
+                role: 'Content Generator',
+                model: 'ollama/gemma4:31b',
+                displayName: 'Primary Worker',
+                glowColor: '#10B981',
+                type: 'local'
+            },
+            'seo-specialist': {
+                emoji: '🔍',
+                role: 'Research & SEO Analyst',
+                model: 'ollama/qwen3.5:122b-a10b',
+                displayName: 'SEO Specialist',
+                glowColor: '#F59E0B',
+                type: 'local'
+            }
+        };
+
+        // Load OpenClaw configuration and session data
         async function loadOpenClawConfig() {
             try {
-                // For local development, we'll use a mock configuration
-                // In production, this would fetch from the actual OpenClaw API
-                const response = await fetch('/.openclaw/openclaw.json').catch(() => null);
-                
-                if (response) {
-                    openClawConfig = await response.json();
-                } else {
-                    // Mock configuration based on the actual structure
-                    openClawConfig = {
-                        agents: {
-                            list: [
-                                {
-                                    id: "saia",
-                                    name: "SAIA",
-                                    model: { primary: "anthropic/claude-sonnet-4-20250514" },
-                                    subagents: { model: "ollama/gemma4:31b" },
-                                    identity: { name: "SAIA", emoji: "✨" }
-                                },
-                                {
-                                    id: "fari-code",
-                                    name: "fari-code",
-                                    model: "minimax/MiniMax-M2.7-highspeed",
-                                    subagents: { model: "ollama/minimax-m2.5-ud-q3" }
-                                },
-                                {
-                                    id: "fari-lab",
-                                    name: "fari-lab",
-                                    model: "ollama/glm-4.7-flash:bf16"
-                                }
-                            ]
-                        },
-                        models: {
-                            providers: {
-                                anthropic: {
-                                    models: [
-                                        { id: "claude-sonnet-4-20250514", name: "Claude Sonnet 4", cost: { input: 3, output: 15 } },
-                                        { id: "claude-opus-4-20250514", name: "Claude Opus 4", cost: { input: 15, output: 75 } }
-                                    ]
-                                },
-                                ollama: {
-                                    models: [
-                                        { id: "gemma4:31b", name: "Gemma 4 31B (Local)", cost: { input: 0, output: 0 } },
-                                        { id: "qwen3.5:122b-a10b", name: "Qwen 3.5 122B-A10B (Local)", cost: { input: 0, output: 0 } }
-                                    ]
-                                },
-                                google: {
-                                    models: [
-                                        { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", cost: { input: 0.075, output: 0.3 } }
-                                    ]
-                                }
-                            }
-                        }
-                    };
-                }
+                openClawConfig = await loadConfigFromPath() || getMockConfig();
+                sessionData = await loadSessionData();
+                activityData = await loadActivityData();
                 
                 renderAgents();
                 renderConfiguration();
                 updateStats();
+                renderActivityFeed();
+                renderTaskStatistics();
+                renderModelUsage();
             } catch (error) {
-                console.error('Failed to load OpenClaw configuration:', error);
+                console.error('Failed to load OpenClaw data:', error);
+                // Use mock data on error
+                openClawConfig = getMockConfig();
+                renderAgents();
+                renderConfiguration();
+                updateStats();
             }
         }
 
-        // Render agents section
+        // Load configuration from file system (when running locally)
+        async function loadConfigFromPath() {
+            try {
+                // This will work when served from local file system
+                const response = await fetch('/Users/fari/.openclaw/openclaw.json');
+                if (response.ok) {
+                    return await response.json();
+                }
+            } catch (e) {
+                // Fallback for web serving - try relative path
+                try {
+                    const response = await fetch('/.openclaw/openclaw.json');
+                    if (response.ok) {
+                        return await response.json();
+                    }
+                } catch (e2) {
+                    console.log('Config file not accessible, using mock data');
+                }
+            }
+            return null;
+        }
+
+        // Load session data from OpenClaw session files
+        async function loadSessionData() {
+            try {
+                const response = await fetch('/Users/fari/.openclaw/agents/saia/sessions/sessions.json');
+                if (response.ok) {
+                    return await response.json();
+                }
+            } catch (e) {
+                console.log('Session data not accessible');
+            }
+            return null;
+        }
+
+        // Load activity data from session logs
+        async function loadActivityData() {
+            // For now, return mock activity data since parsing JSONL files requires server-side processing
+            return [
+                { timestamp: new Date().toISOString(), agent: 'saia', task: 'Mediterranean Content Build', model: 'ollama/gemma4:31b', status: 'completed' },
+                { timestamp: new Date(Date.now() - 300000).toISOString(), agent: 'primary-worker', task: 'SEO Research Analysis', model: 'ollama/qwen3.5:122b-a10b', status: 'running' },
+                { timestamp: new Date(Date.now() - 600000).toISOString(), agent: 'coding', task: 'Dashboard Enhancement', model: 'google/gemini-2.5-flash', status: 'completed' }
+            ];
+        }
+
+        // Mock configuration fallback
+        function getMockConfig() {
+            return {
+                agents: {
+                    list: [
+                        {
+                            id: "saia",
+                            name: "SAIA",
+                            model: { primary: "anthropic/claude-sonnet-4-20250514" },
+                            subagents: { model: "ollama/gemma4:31b" }
+                        },
+                        {
+                            id: "fari-code",
+                            name: "fari-code",
+                            model: "google/gemini-2.5-flash"
+                        }
+                    ]
+                },
+                models: {
+                    providers: {
+                        anthropic: {
+                            models: [
+                                { id: "claude-sonnet-4-20250514", name: "Claude Sonnet 4", cost: { input: 3, output: 15 } }
+                            ]
+                        },
+                        ollama: {
+                            models: [
+                                { id: "gemma4:31b", name: "Gemma 4 31B (Local)", cost: { input: 0, output: 0 } },
+                                { id: "qwen3.5:122b-a10b", name: "Qwen 3.5 122B-A10B (Local)", cost: { input: 0, output: 0 } }
+                            ]
+                        },
+                        google: {
+                            models: [
+                                { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", cost: { input: 0.075, output: 0.3 } }
+                            ]
+                        }
+                    }
+                }
+            };
+        }
+
+        // Render agents section with predefined agent cards
         function renderAgents() {
             const agentsGrid = document.getElementById('agents-grid');
-            if (!openClawConfig || !agentsGrid) return;
-
-            const agents = openClawConfig.agents?.list || [];
-            const providers = openClawConfig.models?.providers || {};
+            if (!agentsGrid) return;
 
             agentsGrid.innerHTML = '';
 
-            agents.forEach((agent, index) => {
-                const primaryModel = typeof agent.model === 'string' ? agent.model : agent.model?.primary;
-                const subagentModel = agent.subagents?.model;
-                
-                // Determine provider and model info
-                const [provider, modelId] = (primaryModel || '').split('/');
-                const providerData = providers[provider];
-                const modelInfo = providerData?.models?.find(m => m.id === modelId);
-                
-                const isLocal = provider === 'ollama';
-                const status = isLocal ? 'local' : 'cloud';
-                const statusColor = isLocal ? 'text-green-400' : 'text-purple-400';
+            Object.entries(agentDefinitions).forEach(([agentKey, agent], index) => {
+                // Get activity data for this agent
+                const agentActivity = activityData.filter(activity => {
+                    if (agentKey === 'saia') return activity.agent === 'saia';
+                    if (agentKey === 'coding') return activity.model?.includes('gemini');
+                    if (agentKey === 'primary-worker') return activity.model?.includes('gemma4');
+                    if (agentKey === 'seo-specialist') return activity.model?.includes('qwen3.5');
+                    return false;
+                });
+
+                const lastActivity = agentActivity[0];
+                const tasksToday = agentActivity.length;
+                const lastActiveTime = lastActivity ? formatTimeAgo(new Date(lastActivity.timestamp)) : 'No activity';
+                const lastTask = lastActivity ? lastActivity.task : 'No recent tasks';
                 
                 const card = document.createElement('div');
-                card.className = 'glassmorphism glow-border rounded-xl p-6 stagger-animation';
+                card.className = 'glassmorphism rounded-xl p-6 stagger-animation relative overflow-hidden';
                 card.style.animationDelay = `${0.1 * (index + 1)}s`;
+                card.style.border = `1px solid ${agent.glowColor}40`;
+                card.style.boxShadow = `0 0 20px ${agent.glowColor}20`;
+                
+                const statusColor = agent.type === 'local' ? 'text-green-400' : 'text-purple-400';
+                const statusBg = agent.type === 'local' ? 'bg-green-400/20' : 'bg-purple-400/20';
                 
                 card.innerHTML = `
+                    <div class="absolute top-0 right-0 w-20 h-20 opacity-10" style="background: radial-gradient(circle, ${agent.glowColor}, transparent 70%)"></div>
                     <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center space-x-2">
-                            <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                            <h3 class="text-lg font-semibold">${agent.name || agent.id}</h3>
+                        <div class="flex items-center space-x-3">
+                            <div class="text-2xl">${agent.emoji}</div>
+                            <div>
+                                <h3 class="text-lg font-semibold">${agent.displayName}</h3>
+                                <p class="text-sm text-gray-400">${agent.role}</p>
+                            </div>
                         </div>
-                        <span class="px-2 py-1 text-xs rounded-full bg-white/10 ${statusColor}">${status.toUpperCase()}</span>
+                        <span class="px-2 py-1 text-xs rounded-full ${statusBg} ${statusColor}">${agent.type.toUpperCase()}</span>
                     </div>
-                    <div class="space-y-2">
+                    <div class="space-y-2 mb-4">
                         <div class="text-sm">
-                            <span class="text-gray-400">Primary:</span>
-                            <span class="text-white">${modelInfo?.name || primaryModel || 'Unknown'}</span>
+                            <span class="text-gray-400">Model:</span>
+                            <span class="text-white text-xs">${agent.model.split('/')[1] || agent.model}</span>
                         </div>
-                        ${subagentModel ? `
                         <div class="text-sm">
-                            <span class="text-gray-400">Subagent:</span>
-                            <span class="text-white">${subagentModel}</span>
+                            <span class="text-gray-400">Last Task:</span>
+                            <span class="text-white text-xs">${lastTask}</span>
                         </div>
-                        ` : ''}
-                        <div class="text-sm">
-                            <span class="text-gray-400">Role:</span>
-                            <span class="text-white">${agent.id === 'saia' ? 'Manager/Orchestrator' : 'Worker'}</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-white/10">
+                        <div class="text-xs text-gray-400">
+                            <span>${lastActiveTime}</span>
+                        </div>
+                        <div class="text-xs" style="color: ${agent.glowColor}">
+                            <span>${tasksToday} tasks today</span>
                         </div>
                     </div>
                 `;
                 
                 agentsGrid.appendChild(card);
             });
+        }
+
+        // Render activity feed
+        function renderActivityFeed() {
+            const activityFeed = document.getElementById('activity-feed');
+            if (!activityFeed || !activityData.length) {
+                if (activityFeed) {
+                    activityFeed.innerHTML = '<div class="text-gray-400 text-sm text-center py-8">No activity data available</div>';
+                }
+                return;
+            }
+
+            activityFeed.innerHTML = '';
+
+            activityData.slice(0, 20).forEach(activity => {
+                const agentKey = getAgentKeyFromActivity(activity);
+                const agent = agentDefinitions[agentKey] || agentDefinitions['saia'];
+                const timeAgo = formatTimeAgo(new Date(activity.timestamp));
+                
+                const statusColor = activity.status === 'completed' ? 'text-green-400' : 
+                                  activity.status === 'running' ? 'text-blue-400' : 'text-yellow-400';
+                const statusIcon = activity.status === 'completed' ? '✓' : 
+                                 activity.status === 'running' ? '●' : '⏸';
+                
+                const item = document.createElement('div');
+                item.className = 'flex items-center space-x-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all';
+                
+                item.innerHTML = `
+                    <div class="text-lg">${agent.emoji}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm font-medium">${activity.task}</span>
+                            <span class="${statusColor} text-xs">${statusIcon}</span>
+                        </div>
+                        <div class="text-xs text-gray-400">
+                            <span>${agent.displayName}</span>
+                            <span class="mx-1">•</span>
+                            <span>${timeAgo}</span>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-500">
+                        ${activity.model?.split('/')[1] || activity.model || 'Unknown'}
+                    </div>
+                `;
+                
+                activityFeed.appendChild(item);
+            });
+        }
+
+        // Render task statistics
+        function renderTaskStatistics() {
+            const today = new Date().toDateString();
+            const thisWeek = getWeekStart(new Date());
+            
+            const tasksToday = activityData.filter(a => new Date(a.timestamp).toDateString() === today).length;
+            const tasksThisWeek = activityData.filter(a => new Date(a.timestamp) >= thisWeek).length;
+            const completedTasks = activityData.filter(a => a.status === 'completed').length;
+            const successRate = activityData.length > 0 ? Math.round((completedTasks / activityData.length) * 100) : 0;
+            
+            // Find most active agent
+            const agentCounts = {};
+            activityData.forEach(activity => {
+                const agentKey = getAgentKeyFromActivity(activity);
+                agentCounts[agentKey] = (agentCounts[agentKey] || 0) + 1;
+            });
+            
+            const mostActiveKey = Object.keys(agentCounts).reduce((a, b) => 
+                agentCounts[a] > agentCounts[b] ? a : b, 'saia');
+            const mostActiveAgent = agentDefinitions[mostActiveKey];
+            
+            document.getElementById('tasks-today').textContent = tasksToday || 'N/A';
+            document.getElementById('tasks-week').textContent = tasksThisWeek || 'N/A';
+            document.getElementById('success-rate').textContent = `${successRate}%`;
+            
+            document.getElementById('most-active-emoji').textContent = mostActiveAgent.emoji;
+            document.getElementById('most-active-name').textContent = mostActiveAgent.displayName;
+            document.getElementById('most-active-tasks').textContent = `${agentCounts[mostActiveKey] || 0} tasks`;
+            
+            // Model distribution
+            const localTasks = activityData.filter(a => a.model?.includes('ollama')).length;
+            const totalTasks = activityData.length;
+            const localPercent = totalTasks > 0 ? Math.round((localTasks / totalTasks) * 100) : 0;
+            
+            document.getElementById('local-usage').textContent = `${localPercent}%`;
+            document.getElementById('cloud-usage').textContent = `${100 - localPercent}%`;
+        }
+
+        // Render model usage table
+        function renderModelUsage() {
+            const table = document.getElementById('model-usage-table');
+            if (!table || !activityData.length) {
+                if (table) {
+                    table.innerHTML = '<tr><td colspan="3" class="text-center py-8 text-gray-400">No usage data available</td></tr>';
+                }
+                return;
+            }
+
+            const modelUsage = {};
+            activityData.forEach(activity => {
+                const agentKey = getAgentKeyFromActivity(activity);
+                const agent = agentDefinitions[agentKey];
+                const key = `${agent.displayName}:${activity.model}`;
+                
+                if (!modelUsage[key]) {
+                    modelUsage[key] = {
+                        agent: agent.displayName,
+                        model: activity.model?.split('/')[1] || activity.model || 'Unknown',
+                        tasks: 0
+                    };
+                }
+                modelUsage[key].tasks++;
+            });
+
+            table.innerHTML = Object.values(modelUsage)
+                .sort((a, b) => b.tasks - a.tasks)
+                .map(usage => `
+                    <tr class="border-b border-white/5">
+                        <td class="py-2">${usage.agent}</td>
+                        <td class="py-2 text-xs text-gray-400">${usage.model}</td>
+                        <td class="py-2 text-right">${usage.tasks}</td>
+                    </tr>
+                `).join('');
+        }
+
+        // Helper functions
+        function getAgentKeyFromActivity(activity) {
+            if (activity.agent === 'saia') return 'saia';
+            if (activity.model?.includes('gemini')) return 'coding';
+            if (activity.model?.includes('gemma4')) return 'primary-worker';
+            if (activity.model?.includes('qwen3.5')) return 'seo-specialist';
+            return 'saia';
+        }
+
+        function formatTimeAgo(date) {
+            const now = new Date();
+            const diff = Math.floor((now - date) / 1000);
+            
+            if (diff < 60) return `${diff}s ago`;
+            if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+            return `${Math.floor(diff / 86400)}d ago`;
+        }
+
+        function getWeekStart(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day;
+            return new Date(d.setDate(diff));
         }
 
         // Render configuration
@@ -422,7 +736,7 @@
         function updateStats() {
             if (!openClawConfig) return;
 
-            const agentCount = openClawConfig.agents?.list?.length || 0;
+            const agentCount = Object.keys(agentDefinitions).length;
             let totalModels = 0;
             
             Object.values(openClawConfig.models?.providers || {}).forEach(provider => {
