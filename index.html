@@ -11,6 +11,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { font-family: 'Inter', sans-serif; }
+        body { 
+            background: #0A0F1E;
+            min-height: 100vh;
+        }
         .glassmorphism {
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(10px);
@@ -46,299 +50,328 @@
             background: linear-gradient(90deg, #7C3AED, #EC4899);
             border-radius: 2px;
         }
-        .fade-transition {
-            transition: opacity 0.3s ease;
-        }
         .stagger-animation {
-            animation: slideInUp 0.8s ease forwards;
             opacity: 0;
-            transform: translateY(30px);
+            transform: translateY(20px);
+            animation: slideUp 0.6s ease-out forwards;
         }
-        @keyframes slideInUp {
+        @keyframes slideUp {
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-        .status-online { color: #10B981; }
-        .status-offline { color: #EF4444; }
-        .gradient-text {
-            background: linear-gradient(135deg, #7C3AED, #EC4899);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .kanban-column { min-height: 280px; transition: box-shadow 0.2s ease; }
+        .kanban-column.kanban-drag-target {
+            box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.55), 0 0 24px rgba(236, 72, 153, 0.15);
         }
+        .task-card { cursor: grab; }
+        .task-card:active { cursor: grabbing; }
+        #productivity-donut-wrap { width: 88px; height: 88px; flex-shrink: 0; }
     </style>
 </head>
-<body class="bg-[#0A0F1E] text-white min-h-screen">
-    <!-- Top Navigation -->
-    <nav class="glassmorphism border-b border-white/10 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-6 py-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                        <span class="text-sm font-bold">OS</span>
-                    </div>
-                    <h1 class="text-xl font-semibold">Agent OS Dashboard</h1>
-                </div>
-                <div class="flex space-x-1 bg-white/5 rounded-full p-1">
-                    <button class="pill-tab active px-4 py-2 rounded-full text-sm font-medium transition-all" data-tab="dashboard">Dashboard</button>
-                    <button class="pill-tab px-4 py-2 rounded-full text-sm font-medium transition-all hover:bg-white/5" data-tab="agents">Agents</button>
-                    <button class="pill-tab px-4 py-2 rounded-full text-sm font-medium transition-all hover:bg-white/5" data-tab="tasks">Tasks</button>
-                    <button class="pill-tab px-4 py-2 rounded-full text-sm font-medium transition-all hover:bg-white/5" data-tab="costs">Costs</button>
-                    <button class="pill-tab px-4 py-2 rounded-full text-sm font-medium transition-all hover:bg-white/5" data-tab="settings">Settings</button>
-                </div>
+<body class="text-white overflow-x-hidden">
+    <div class="container mx-auto px-6 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8 stagger-animation">
+            <h1 class="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                Agent OS Dashboard
+            </h1>
+            <p class="text-gray-300">Real-time agent fleet management and performance monitoring</p>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="glassmorphism rounded-xl p-2 mb-8 stagger-animation" style="animation-delay: 0.1s;">
+            <div class="flex space-x-2">
+                <button type="button" class="pill-tab active px-6 py-3 rounded-xl text-sm font-medium bg-gradient-to-r from-purple-600 to-pink-600 transition-all" onclick="showTab('dashboard', this)">
+                    Dashboard
+                </button>
+                <button type="button" class="pill-tab px-6 py-3 rounded-xl text-sm font-medium hover:bg-white/5 transition-all" onclick="showTab('agents', this)">
+                    Agents
+                </button>
+                <button type="button" class="pill-tab px-6 py-3 rounded-xl text-sm font-medium hover:bg-white/5 transition-all" onclick="showTab('tasks', this)">
+                    Tasks
+                </button>
+                <button type="button" class="pill-tab px-6 py-3 rounded-xl text-sm font-medium hover:bg-white/5 transition-all" onclick="showTab('costs', this)">
+                    Costs
+                </button>
+                <button type="button" class="pill-tab px-6 py-3 rounded-xl text-sm font-medium hover:bg-white/5 transition-all" onclick="showTab('settings', this)">
+                    Settings
+                </button>
             </div>
         </div>
-    </nav>
 
-    <!-- Dashboard Tab -->
-    <div id="dashboard-tab" class="tab-content">
-        <div class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Dashboard Tab -->
+        <div id="dashboard-tab" class="tab-content">
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="glassmorphism glow-border rounded-xl p-6 stagger-animation" style="animation-delay: 0.1s; border-image: linear-gradient(135deg, #7C3AED, #EC4899) 1;">
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm">Model Personas</p>
+                                <p class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent" id="active-agents-count">4</p>
+                            </div>
+                            <div class="text-3xl">🤖</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="glassmorphism glow-border rounded-xl p-6 stagger-animation" style="animation-delay: 0.2s; border-image: linear-gradient(135deg, #06B6D4, #7C3AED) 1;">
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm">Total Models</p>
+                                <p class="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent" id="total-models-count">8</p>
+                            </div>
+                            <div class="text-3xl">⚡</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="glassmorphism glow-border rounded-xl p-6 stagger-animation" style="animation-delay: 0.3s; border-image: linear-gradient(135deg, #F59E0B, #06B6D4) 1;">
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm">Tasks Today</p>
+                                <p class="text-2xl font-bold bg-gradient-to-r from-amber-400 to-cyan-400 bg-clip-text text-transparent" id="dashboard-tasks-today">0</p>
+                            </div>
+                            <div class="text-3xl">📊</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="glassmorphism glow-border rounded-xl p-6 stagger-animation" style="animation-delay: 0.4s; border-image: linear-gradient(135deg, #EC4899, #F59E0B) 1;">
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm">Success Rate</p>
+                                <p class="text-2xl font-bold bg-gradient-to-r from-pink-400 to-amber-400 bg-clip-text text-transparent" id="dashboard-success-rate">0%</p>
+                            </div>
+                            <div class="text-3xl">✨</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Stats Row -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="glassmorphism glow-border rounded-xl p-6 stagger-animation" style="animation-delay: 0.1s">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold">Active Agents</h3>
-                        <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                <div class="glassmorphism glow-border rounded-xl p-6 stagger-animation" style="animation-delay: 0.35s;">
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm">Tasks This Week</p>
+                                <p class="text-2xl font-bold bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent" id="dashboard-tasks-week">0</p>
+                            </div>
+                            <div class="text-3xl">📅</div>
+                        </div>
                     </div>
-                    <div class="text-3xl font-bold gradient-text" id="active-agents-count">5</div>
-                    <p class="text-gray-400 text-sm">Currently running</p>
                 </div>
                 
-                <div class="glassmorphism glow-border rounded-xl p-6 stagger-animation" style="animation-delay: 0.2s">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold">Total Models</h3>
-                        <div class="w-3 h-3 bg-cyan-400 rounded-full"></div>
+                <div class="glassmorphism glow-border rounded-xl p-6 stagger-animation" style="animation-delay: 0.4s;">
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm">Total Messages</p>
+                                <p class="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent" id="dashboard-total-messages">0</p>
+                            </div>
+                            <div class="text-3xl">💬</div>
+                        </div>
                     </div>
-                    <div class="text-3xl font-bold text-cyan-400" id="total-models-count">12</div>
-                    <p class="text-gray-400 text-sm">Local + Cloud</p>
                 </div>
                 
-                <div class="glassmorphism glow-border rounded-xl p-6 stagger-animation" style="animation-delay: 0.3s">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold">Cost Today</h3>
-                        <div class="w-3 h-3 bg-amber-400 rounded-full"></div>
+                <div class="glassmorphism glow-border rounded-xl p-6 stagger-animation" style="animation-delay: 0.45s;">
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm">Most Active</p>
+                                <p class="text-lg font-bold bg-gradient-to-r from-amber-400 to-red-400 bg-clip-text text-transparent" id="dashboard-most-active-name">None</p>
+                                <p class="text-xs text-gray-400" id="dashboard-most-active-tasks">0 tasks</p>
+                            </div>
+                            <div class="text-3xl">🏆</div>
+                        </div>
                     </div>
-                    <div class="text-3xl font-bold text-amber-400">$2.47</div>
-                    <p class="text-gray-400 text-sm">vs $10 target</p>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div class="glassmorphism glow-border rounded-xl p-6 stagger-animation" style="animation-delay: 0.4s">
-                    <h3 class="text-xl font-semibold mb-4">Token Usage (24h)</h3>
-                    <canvas id="tokenChart" width="400" height="200"></canvas>
-                </div>
-                
-                <div class="glassmorphism glow-border rounded-xl p-6 stagger-animation" style="animation-delay: 0.5s">
-                    <h3 class="text-xl font-semibold mb-4">Cost Breakdown</h3>
-                    <canvas id="costChart" width="400" height="200"></canvas>
+            <!-- Model Distribution Chart -->
+            <div class="glassmorphism glow-border rounded-xl p-6 mb-8 stagger-animation" style="animation-delay: 0.5s;">
+                <div class="relative z-10">
+                    <h3 class="text-xl font-semibold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Real Model Distribution</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="model-distribution-grid">
+                        <!-- Dynamic model distribution will be populated here -->
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Agents Tab -->
-    <div id="agents-tab" class="tab-content hidden fade-transition">
-        <div class="max-w-7xl mx-auto px-6 py-8">
-            <div class="mb-8">
-                <h2 class="text-2xl font-bold gradient-text mb-2">Agent Fleet</h2>
-                <p class="text-gray-400">Real-time status and configuration from OpenClaw</p>
-            </div>
-            
-            <!-- Agent Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8" id="agents-grid">
-                <!-- Agent cards will be dynamically loaded here -->
-            </div>
-            
-            <!-- Task Statistics -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="glassmorphism glow-border rounded-xl p-6">
-                    <h3 class="text-lg font-semibold mb-4">Task Statistics</h3>
-                    <div class="space-y-3">
-                        <div class="flex justify-between">
-                            <span class="text-gray-400">Tasks Today</span>
-                            <span class="text-white" id="tasks-today">Loading...</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-400">Tasks This Week</span>
-                            <span class="text-white" id="tasks-week">Loading...</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-400">Success Rate</span>
-                            <span class="text-green-400" id="success-rate">Loading...</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="glassmorphism glow-border rounded-xl p-6">
-                    <h3 class="text-lg font-semibold mb-4">Most Active Agent</h3>
-                    <div class="text-center">
-                        <div class="text-2xl mb-2" id="most-active-emoji">🤖</div>
-                        <div class="text-lg font-semibold" id="most-active-name">Loading...</div>
-                        <div class="text-gray-400 text-sm" id="most-active-tasks">Loading...</div>
-                    </div>
-                </div>
-                
-                <div class="glassmorphism glow-border rounded-xl p-6">
-                    <h3 class="text-lg font-semibold mb-4">Model Distribution</h3>
-                    <div class="space-y-2">
-                        <div class="flex justify-between text-sm">
-                            <span class="text-gray-400">Local Models</span>
-                            <span class="text-green-400" id="local-usage">Loading...</span>
-                        </div>
-                        <div class="flex justify-between text-sm">
-                            <span class="text-gray-400">Cloud APIs</span>
-                            <span class="text-purple-400" id="cloud-usage">Loading...</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
             <!-- Recent Activity Feed -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div class="glassmorphism glow-border rounded-xl p-6">
-                    <h3 class="text-lg font-semibold mb-4">Recent Activity</h3>
-                    <div class="space-y-3 max-h-96 overflow-y-auto" id="activity-feed">
-                        <div class="text-gray-400 text-sm text-center py-8">Loading activity...</div>
-                    </div>
-                </div>
-                
-                <div class="glassmorphism glow-border rounded-xl p-6">
-                    <h3 class="text-lg font-semibold mb-4">Model Usage Today</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
-                            <thead>
-                                <tr class="border-b border-white/10">
-                                    <th class="text-left py-2 text-gray-400">Agent</th>
-                                    <th class="text-left py-2 text-gray-400">Model</th>
-                                    <th class="text-right py-2 text-gray-400">Tasks</th>
-                                </tr>
-                            </thead>
-                            <tbody id="model-usage-table">
-                                <tr>
-                                    <td colspan="3" class="text-center py-8 text-gray-400">Loading usage data...</td>
-                                </tr>
-                            </tbody>
-                        </table>
+            <div class="glassmorphism glow-border rounded-xl p-6 stagger-animation" style="animation-delay: 0.6s;">
+                <div class="relative z-10">
+                    <h3 class="text-xl font-semibold mb-4 bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">Recent Activity</h3>
+                    <div class="space-y-3" id="activity-feed">
+                        <div class="text-center text-gray-400">Loading activity...</div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Tasks Tab -->
-    <div id="tasks-tab" class="tab-content hidden fade-transition">
-        <div class="max-w-7xl mx-auto px-6 py-8">
-            <div class="mb-6">
-                <h2 class="text-2xl font-bold gradient-text mb-2">Task Queue</h2>
-                <p class="text-gray-400">Active and recent sub-agent tasks</p>
+        <!-- Agents Tab -->
+        <div id="agents-tab" class="tab-content hidden">
+            <div class="mb-4 p-4 glassmorphism rounded-lg">
+                <h3 class="text-lg font-semibold mb-2">Model Personas</h3>
+                <p class="text-sm text-gray-400">These are role-based model assignments derived from session activity, not running OpenClaw processes.</p>
             </div>
-            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="agents-grid">
+                <!-- Agent cards will be dynamically populated -->
+            </div>
+        </div>
+
+        <div id="tasks-tab" class="tab-content hidden">
+            <div class="glassmorphism glow-border rounded-xl p-4 mb-4 max-h-[120px] overflow-hidden relative z-10">
+                <div class="flex flex-wrap items-center gap-4 justify-between">
+                    <div id="productivity-donut-wrap" class="relative">
+                        <canvas id="productivityDonut" aria-label="Task status chart"></canvas>
+                    </div>
+                    <div class="flex flex-1 flex-wrap gap-3 justify-center min-w-0">
+                        <div class="glassmorphism rounded-lg px-4 py-2 text-center min-w-[100px] border border-blue-500/30">
+                            <p class="text-[10px] uppercase tracking-wide text-blue-400">To Do</p>
+                            <p class="text-lg font-bold text-blue-300" id="stat-todo-n">0</p>
+                            <p class="text-xs text-gray-500" id="stat-todo-p">0%</p>
+                        </div>
+                        <div class="glassmorphism rounded-lg px-4 py-2 text-center min-w-[100px] border border-amber-500/30">
+                            <p class="text-[10px] uppercase tracking-wide text-amber-400">Doing</p>
+                            <p class="text-lg font-bold text-amber-300" id="stat-doing-n">0</p>
+                            <p class="text-xs text-gray-500" id="stat-doing-p">0%</p>
+                        </div>
+                        <div class="glassmorphism rounded-lg px-4 py-2 text-center min-w-[100px] border border-emerald-500/30">
+                            <p class="text-[10px] uppercase tracking-wide text-emerald-400">Done</p>
+                            <p class="text-lg font-bold text-emerald-300" id="stat-done-n">0</p>
+                            <p class="text-xs text-gray-500" id="stat-done-p">0%</p>
+                        </div>
+                    </div>
+                    <div id="motivation-pill" class="text-xs sm:text-sm px-3 py-2 rounded-full glassmorphism border border-white/10 text-gray-200 max-w-[220px] text-center leading-snug">
+                        —
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-3 mb-4 items-center">
+                <select id="kanban-filter-category" class="glassmorphism rounded-lg px-3 py-2 text-sm text-white border border-white/10 bg-[#0A0F1E]/80">
+                    <option value="">All categories</option>
+                    <option value="Work">Work</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Development">Development</option>
+                    <option value="Personal">Personal</option>
+                </select>
+                <select id="kanban-filter-priority" class="glassmorphism rounded-lg px-3 py-2 text-sm text-white border border-white/10 bg-[#0A0F1E]/80">
+                    <option value="">All priorities</option>
+                    <option value="Urgent">Urgent</option>
+                    <option value="Normal">Normal</option>
+                    <option value="Someday">Someday</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-start" id="kanban-board">
+                <div class="kanban-column rounded-xl p-4 glassmorphism border border-white/5" data-status="todo" ondragover="kanbanDragOver(event)" ondragleave="kanbanDragLeave(event)" ondrop="kanbanDrop(event)">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-semibold text-white">To Do</h3>
+                        <span class="text-sm text-gray-400 tabular-nums" id="hdr-todo">0</span>
+                    </div>
+                    <div class="space-y-3 min-h-[120px] mb-3" id="col-todo"></div>
+                    <div id="add-wrap-todo" class="hidden mb-3 glassmorphism rounded-lg p-3 border border-white/10 space-y-2 text-sm"></div>
+                    <button type="button" class="w-full py-2 rounded-lg border border-dashed border-white/20 text-gray-400 hover:border-purple-500/50 hover:text-purple-300 text-sm" data-add-open="todo">+ Add Task</button>
+                </div>
+                <div class="kanban-column rounded-xl p-4 glassmorphism border border-white/5" data-status="in_progress" ondragover="kanbanDragOver(event)" ondragleave="kanbanDragLeave(event)" ondrop="kanbanDrop(event)">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-semibold text-white">Doing</h3>
+                        <span class="text-sm text-gray-400 tabular-nums" id="hdr-doing">0</span>
+                    </div>
+                    <div class="space-y-3 min-h-[120px] mb-3" id="col-doing"></div>
+                    <div id="add-wrap-doing" class="hidden mb-3 glassmorphism rounded-lg p-3 border border-white/10 space-y-2 text-sm"></div>
+                    <button type="button" class="w-full py-2 rounded-lg border border-dashed border-white/20 text-gray-400 hover:border-purple-500/50 hover:text-purple-300 text-sm" data-add-open="doing">+ Add Task</button>
+                </div>
+                <div class="kanban-column rounded-xl p-4 glassmorphism border border-white/5" data-status="done" ondragover="kanbanDragOver(event)" ondragleave="kanbanDragLeave(event)" ondrop="kanbanDrop(event)">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-semibold text-white">Done</h3>
+                        <span class="text-sm text-gray-400 tabular-nums" id="hdr-done">0</span>
+                    </div>
+                    <div class="space-y-3 min-h-[120px] mb-3" id="col-done"></div>
+                    <div id="add-wrap-done" class="hidden mb-3 glassmorphism rounded-lg p-3 border border-white/10 space-y-2 text-sm"></div>
+                    <button type="button" class="w-full py-2 rounded-lg border border-dashed border-white/20 text-gray-400 hover:border-purple-500/50 hover:text-purple-300 text-sm" data-add-open="done">+ Add Task</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="task-edit-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm" aria-modal="true">
+            <div class="glassmorphism glow-border rounded-xl p-6 max-w-md w-full border border-white/10 relative z-10 max-h-[90vh] overflow-y-auto">
+                <h3 class="text-lg font-semibold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Edit task</h3>
+                <form id="task-edit-form" class="space-y-3 text-sm">
+                    <input type="hidden" id="edit-task-id" />
+                    <div>
+                        <label class="text-gray-400 text-xs">Title</label>
+                        <input id="edit-title" class="w-full mt-1 rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white" required />
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-xs">Category</label>
+                        <select id="edit-category" class="w-full mt-1 rounded-lg bg-[#0A0F1E] border border-white/10 px-3 py-2 text-white"></select>
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-xs">Priority</label>
+                        <select id="edit-priority" class="w-full mt-1 rounded-lg bg-[#0A0F1E] border border-white/10 px-3 py-2 text-white"></select>
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-xs">Track status</label>
+                        <select id="edit-track" class="w-full mt-1 rounded-lg bg-[#0A0F1E] border border-white/10 px-3 py-2 text-white"></select>
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-xs">Column</label>
+                        <select id="edit-status" class="w-full mt-1 rounded-lg bg-[#0A0F1E] border border-white/10 px-3 py-2 text-white">
+                            <option value="todo">To Do</option>
+                            <option value="in_progress">Doing</option>
+                            <option value="done">Done</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-gray-400 text-xs">Due date</label>
+                        <input type="date" id="edit-due" class="w-full mt-1 rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-white" />
+                    </div>
+                    <div class="flex gap-2 pt-2">
+                        <button type="submit" class="flex-1 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 font-medium">Save</button>
+                        <button type="button" id="edit-cancel" class="flex-1 py-2 rounded-lg border border-white/20 text-gray-300">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="costs-tab" class="tab-content hidden">
             <div class="glassmorphism glow-border rounded-xl p-6">
-                <div class="space-y-4" id="tasks-list">
-                    <div class="flex items-center justify-between p-4 bg-white/5 rounded-lg">
-                        <div>
-                            <h4 class="font-medium">Mediterranean Content Build</h4>
-                            <p class="text-sm text-gray-400">Gemma 4 31B • Running for 4m 23s</p>
+                <div class="relative z-10">
+                    <h3 class="text-xl font-semibold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Usage Analytics</h3>
+                    <p class="text-sm text-gray-400 mb-4">📊 Activity metrics only - not connected to billing data</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="text-center glassmorphism rounded-lg p-4">
+                            <p class="text-gray-400 text-sm">Session Messages</p>
+                            <p class="text-2xl font-bold bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent" id="daily-spend">0</p>
                         </div>
-                        <div class="flex items-center space-x-2">
-                            <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                            <span class="text-sm text-green-400">Running</span>
+                        <div class="text-center glassmorphism rounded-lg p-4">
+                            <p class="text-gray-400 text-sm">Local Usage</p>
+                            <p class="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent" id="local-usage-percent">0%</p>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Costs Tab -->
-    <div id="costs-tab" class="tab-content hidden fade-transition">
-        <div class="max-w-7xl mx-auto px-6 py-8">
-            <div class="mb-6">
-                <h2 class="text-2xl font-bold gradient-text mb-2">Cost Management</h2>
-                <p class="text-gray-400">API usage and optimization metrics</p>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="glassmorphism glow-border rounded-xl p-6">
-                    <h3 class="text-lg font-semibold mb-4">Daily Spend Tracking</h3>
-                    <div class="space-y-4">
-                        <div class="flex justify-between items-center">
-                            <span>Claude Sonnet 4</span>
-                            <span class="text-purple-400">$1.20</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span>Gemini 2.5 Flash</span>
-                            <span class="text-cyan-400">$0.87</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span>Local Models</span>
-                            <span class="text-green-400">$0.00</span>
-                        </div>
-                        <hr class="border-white/10">
-                        <div class="flex justify-between items-center font-semibold">
-                            <span>Total</span>
-                            <span class="text-amber-400">$2.47</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="glassmorphism glow-border rounded-xl p-6">
-                    <h3 class="text-lg font-semibold mb-4">Optimization Status</h3>
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <span>Local Processing</span>
-                            <span class="text-green-400">89.2%</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span>Cost vs Target</span>
-                            <span class="text-green-400">75% under</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span>Efficiency Score</span>
-                            <span class="text-green-400">A+</span>
+                        <div class="text-center glassmorphism rounded-lg p-4">
+                            <p class="text-gray-400 text-sm">Success Rate</p>
+                            <p class="text-2xl font-bold bg-gradient-to-r from-amber-400 to-pink-400 bg-clip-text text-transparent" id="optimization-score">0%</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Settings Tab -->
-    <div id="settings-tab" class="tab-content hidden fade-transition">
-        <div class="max-w-7xl mx-auto px-6 py-8">
-            <div class="mb-6">
-                <h2 class="text-2xl font-bold gradient-text mb-2">System Settings</h2>
-                <p class="text-gray-400">OpenClaw configuration and preferences</p>
-            </div>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="glassmorphism glow-border rounded-xl p-6">
-                    <h3 class="text-lg font-semibold mb-4">Agent Configuration</h3>
-                    <div class="space-y-4" id="config-display">
-                        <!-- Configuration will be loaded here -->
-                    </div>
-                </div>
-                
-                <div class="glassmorphism glow-border rounded-xl p-6">
-                    <h3 class="text-lg font-semibold mb-4">System Health</h3>
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <span>OpenClaw Gateway</span>
-                            <span class="status-online">●</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span>Ollama Service</span>
-                            <span class="status-online">●</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span>Mattermost</span>
-                            <span class="status-online">●</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span>Browser Control</span>
-                            <span class="status-online">●</span>
+        <div id="settings-tab" class="tab-content hidden">
+            <div class="glassmorphism glow-border rounded-xl p-6">
+                <div class="relative z-10">
+                    <h3 class="text-xl font-semibold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">System Configuration</h3>
+                    <div class="text-sm text-gray-300">
+                        <p>Real-time status and configuration from OpenClaw</p>
+                        <div id="config-display" class="mt-4 p-4 glassmorphism rounded-lg">
+                            <pre class="text-xs overflow-auto">Loading configuration...</pre>
                         </div>
                     </div>
                 </div>
@@ -350,215 +383,516 @@
         let openClawConfig = null;
         let sessionData = null;
         let activityData = [];
+        let kanbanTasksAll = [];
+        let productivityChart = null;
 
-        // Agent definitions with specific configurations
-        const agentDefinitions = {
-            'saia': {
-                emoji: '🤖',
-                role: 'Strategic Orchestrator',
-                model: 'anthropic/claude-sonnet-4-20250514',
-                displayName: 'SAIA Manager',
-                glowColor: '#7C3AED',
-                type: 'cloud'
-            },
-            'coding': {
-                emoji: '⚡',
-                role: 'Full Stack Developer',
-                model: 'google/gemini-2.5-flash',
-                displayName: 'Coding Agent',
-                glowColor: '#06B6D4',
-                type: 'cloud'
-            },
-            'primary-worker': {
-                emoji: '🔧',
-                role: 'Content Generator',
-                model: 'ollama/gemma4:31b',
-                displayName: 'Primary Worker',
-                glowColor: '#10B981',
-                type: 'local'
-            },
-            'seo-specialist': {
-                emoji: '🔍',
-                role: 'Research & SEO Analyst',
-                model: 'ollama/qwen3.5:122b-a10b',
-                displayName: 'SEO Specialist',
-                glowColor: '#F59E0B',
-                type: 'local'
-            }
+        const KANBAN_OPTS = {
+            category: ['Work', 'Marketing', 'Development', 'Personal'],
+            priority: ['Urgent', 'Normal', 'Someday'],
+            track: ['On Track', 'At Risk', 'Off Track'],
         };
 
-        // Load OpenClaw configuration and session data
-        async function loadOpenClawConfig() {
+        const catPill = { Work: 'bg-purple-500/25 text-purple-300 border-purple-500/40', Marketing: 'bg-amber-500/25 text-amber-300 border-amber-500/40', Development: 'bg-emerald-500/25 text-emerald-300 border-emerald-500/40', Personal: 'bg-cyan-500/25 text-cyan-300 border-cyan-500/40' };
+        const priPill = { Urgent: 'bg-red-500/25 text-red-300 border-red-500/40', Normal: 'bg-blue-500/25 text-blue-300 border-blue-500/40', Someday: 'bg-gray-500/25 text-gray-300 border-gray-500/40' };
+        const trkPill = { 'On Track': 'bg-emerald-500/25 text-emerald-300 border-emerald-500/40', 'At Risk': 'bg-amber-500/25 text-amber-300 border-amber-500/40', 'Off Track': 'bg-red-500/25 text-red-300 border-red-500/40' };
+
+        function showTab(tabName, btn) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.querySelectorAll('.pill-tab').forEach(button => {
+                button.classList.remove('active', 'bg-gradient-to-r', 'from-purple-600', 'to-pink-600');
+                button.classList.add('hover:bg-white/5');
+            });
+            document.getElementById(tabName + '-tab').classList.remove('hidden');
+            if (btn) {
+                btn.classList.add('active', 'bg-gradient-to-r', 'from-purple-600', 'to-pink-600');
+                btn.classList.remove('hover:bg-white/5');
+            }
+            if (tabName === 'tasks') {
+                loadKanbanTasks().then(() => setTimeout(() => {
+                    if (productivityChart) productivityChart.resize();
+                }, 120));
+            }
+        }
+
+        function escapeHtml(s) {
+            const d = document.createElement('div');
+            d.textContent = s == null ? '' : String(s);
+            return d.innerHTML;
+        }
+
+        function kanbanMotivation(donePct) {
+            if (donePct <= 30) return 'Just getting started — let\'s go! 🚀';
+            if (donePct <= 60) return 'Good progress — keep pushing! 💪';
+            if (donePct <= 90) return 'Almost there — finish strong! 🔥';
+            return 'Outstanding — you crushed it! 🏆';
+        }
+
+        function updateProductivityBar(todo, doing, done) {
+            const total = todo + doing + done;
+            const t = total || 1;
+            const pTodo = Math.round((todo / t) * 100);
+            const pDoing = Math.round((doing / t) * 100);
+            const pDone = Math.round((done / t) * 100);
+            document.getElementById('stat-todo-n').textContent = todo;
+            document.getElementById('stat-doing-n').textContent = doing;
+            document.getElementById('stat-done-n').textContent = done;
+            document.getElementById('stat-todo-p').textContent = pTodo + '%';
+            document.getElementById('stat-doing-p').textContent = pDoing + '%';
+            document.getElementById('stat-done-p').textContent = pDone + '%';
+            const donePct = total ? Math.round((done / total) * 100) : 0;
+            document.getElementById('motivation-pill').textContent = kanbanMotivation(donePct);
+            const ctx = document.getElementById('productivityDonut');
+            if (!ctx) return;
+            if (productivityChart) productivityChart.destroy();
+            productivityChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['To Do', 'Doing', 'Done'],
+                    datasets: [{
+                        data: [todo, doing, done],
+                        backgroundColor: ['#3B82F6', '#F59E0B', '#10B981'],
+                        borderWidth: 0,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '62%',
+                    plugins: { legend: { display: false }, tooltip: { enabled: true } },
+                },
+            });
+        }
+
+        function filteredKanbanTasks() {
+            const c = document.getElementById('kanban-filter-category').value;
+            const p = document.getElementById('kanban-filter-priority').value;
+            return kanbanTasksAll.filter(t => (!c || t.category === c) && (!p || t.priority === p));
+        }
+
+        function renderKanban() {
+            const list = filteredKanbanTasks();
+            const todo = list.filter(t => t.status === 'todo');
+            const doing = list.filter(t => t.status === 'in_progress');
+            const done = list.filter(t => t.status === 'done');
+            document.getElementById('hdr-todo').textContent = todo.length;
+            document.getElementById('hdr-doing').textContent = doing.length;
+            document.getElementById('hdr-done').textContent = done.length;
+            const allTodo = kanbanTasksAll.filter(t => t.status === 'todo').length;
+            const allDoing = kanbanTasksAll.filter(t => t.status === 'in_progress').length;
+            const allDone = kanbanTasksAll.filter(t => t.status === 'done').length;
+            updateProductivityBar(allTodo, allDoing, allDone);
+            ['todo', 'doing', 'done'].forEach(key => {
+                const colId = key === 'todo' ? 'col-todo' : key === 'doing' ? 'col-doing' : 'col-done';
+                const tasks = key === 'todo' ? todo : key === 'doing' ? doing : done;
+                const el = document.getElementById(colId);
+                el.innerHTML = '';
+                tasks.forEach(task => el.appendChild(renderTaskCard(task)));
+            });
+        }
+
+        function renderTaskCard(task) {
+            const wrap = document.createElement('div');
+            wrap.className = 'task-card glassmorphism rounded-lg p-3 border border-white/10 bg-[#0A0F1E]/90 hover:border-white/20 relative group';
+            wrap.draggable = true;
+            wrap.dataset.taskId = task.id;
+            wrap.ondragstart = (e) => {
+                if (e.target.closest && (e.target.closest('button') || e.target.closest('input') || e.target.closest('[data-dropdown]'))) {
+                    e.preventDefault();
+                    return;
+                }
+                e.dataTransfer.setData('text/plain', task.id);
+                e.dataTransfer.effectAllowed = 'move';
+            };
+            const overdue = task.dueDate && task.status !== 'done' && (() => {
+                const d = new Date(task.dueDate + 'T12:00:00');
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                d.setHours(0, 0, 0, 0);
+                return d < today;
+            })();
+            const dueClass = overdue ? 'text-red-400 font-medium' : 'text-gray-500';
+            const cbChecked = task.status === 'done' ? 'checked' : '';
+            wrap.innerHTML = `
+                <div class="flex gap-2 items-start">
+                    <input type="checkbox" class="mt-1 rounded-full border-white/30 bg-transparent w-4 h-4 accent-emerald-500 shrink-0" ${cbChecked} data-cb="${task.id}" />
+                    <div class="flex-1 min-w-0">
+                        <div class="font-bold text-white text-sm leading-tight">${escapeHtml(task.title)}</div>
+                        <div class="flex flex-wrap gap-1 mt-2">
+                            <span class="text-[10px] px-2 py-0.5 rounded-full border ${catPill[task.category] || 'border-white/20'}">${escapeHtml(task.category)}</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full border ${priPill[task.priority] || 'border-white/20'}">${escapeHtml(task.priority)}</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full border ${trkPill[task.trackStatus] || 'border-white/20'}">${escapeHtml(task.trackStatus)}</span>
+                        </div>
+                        <div class="text-[11px] mt-2 ${dueClass}">${task.dueDate ? 'Due ' + escapeHtml(task.dueDate) : 'No due date'}</div>
+                    </div>
+                    <div class="relative shrink-0">
+                        <button type="button" class="text-gray-500 hover:text-white px-1" data-menu="${task.id}" aria-label="Menu">⋯</button>
+                        <div class="hidden absolute right-0 top-6 z-20 glassmorphism border border-white/10 rounded-lg py-1 min-w-[120px] shadow-xl" data-dropdown="${task.id}">
+                            <button type="button" class="block w-full text-left px-3 py-2 text-sm hover:bg-white/10" data-edit="${task.id}">Edit</button>
+                            <button type="button" class="block w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-white/10" data-del="${task.id}">Delete</button>
+                        </div>
+                    </div>
+                </div>`;
+            const cb = wrap.querySelector('[data-cb]');
+            cb.addEventListener('click', (e) => e.stopPropagation());
+            cb.addEventListener('change', () => kanbanToggleDone(task.id, cb.checked));
+            wrap.querySelector('[data-menu]').addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('[data-dropdown]').forEach(d => { if (d.dataset.dropdown !== task.id) d.classList.add('hidden'); });
+                wrap.querySelector('[data-dropdown]').classList.toggle('hidden');
+            });
+            wrap.querySelector('[data-edit]').addEventListener('click', (e) => {
+                e.stopPropagation();
+                wrap.querySelector('[data-dropdown]').classList.add('hidden');
+                openEditModal(task.id);
+            });
+            wrap.querySelector('[data-del]').addEventListener('click', (e) => {
+                e.stopPropagation();
+                wrap.querySelector('[data-dropdown]').classList.add('hidden');
+                kanbanDelete(task.id);
+            });
+            return wrap;
+        }
+
+        document.addEventListener('click', () => {
+            document.querySelectorAll('[data-dropdown]').forEach(d => d.classList.add('hidden'));
+        });
+
+        async function kanbanToggleDone(id, checked) {
+            const t = kanbanTasksAll.find(x => x.id === id);
+            if (!t) return;
+            const status = checked ? 'done' : 'todo';
+            await fetch('/api/tasks', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status }) });
+            await loadKanbanTasks();
+        }
+
+        async function kanbanDelete(id) {
+            await fetch('/api/tasks/' + encodeURIComponent(id), { method: 'DELETE' });
+            await loadKanbanTasks();
+        }
+
+        function kanbanDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('kanban-drag-target');
+        }
+        function kanbanDragLeave(e) {
+            e.currentTarget.classList.remove('kanban-drag-target');
+        }
+        async function kanbanDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('kanban-drag-target');
+            const id = e.dataTransfer.getData('text/plain');
+            const status = e.currentTarget.dataset.status;
+            if (!id || !status) return;
+            await fetch('/api/tasks', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status }) });
+            await loadKanbanTasks();
+        }
+
+        function fillSelect(sel, arr) {
+            sel.innerHTML = arr.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('');
+        }
+
+        function openEditModal(id) {
+            const t = kanbanTasksAll.find(x => x.id === id);
+            if (!t) return;
+            document.getElementById('edit-task-id').value = t.id;
+            document.getElementById('edit-title').value = t.title;
+            fillSelect(document.getElementById('edit-category'), KANBAN_OPTS.category);
+            document.getElementById('edit-category').value = t.category;
+            fillSelect(document.getElementById('edit-priority'), KANBAN_OPTS.priority);
+            document.getElementById('edit-priority').value = t.priority;
+            fillSelect(document.getElementById('edit-track'), KANBAN_OPTS.track);
+            document.getElementById('edit-track').value = t.trackStatus;
+            document.getElementById('edit-status').value = t.status;
+            document.getElementById('edit-due').value = t.dueDate || '';
+            const m = document.getElementById('task-edit-modal');
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+        }
+
+        function closeEditModal() {
+            const m = document.getElementById('task-edit-modal');
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+        }
+
+        async function loadKanbanTasks() {
+            try {
+                const r = await fetch('/api/tasks');
+                if (!r.ok) throw new Error('load failed');
+                kanbanTasksAll = await r.json();
+                renderKanban();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function buildInlineForm(status) {
+            const opts = (arr) => arr.map(x => `<option value="${x}">${x}</option>`).join('');
+            return `
+                <input type="text" placeholder="Title" class="w-full rounded-lg bg-white/5 border border-white/10 px-2 py-1.5 text-white text-sm kanban-add-title" />
+                <select class="w-full rounded-lg bg-[#0A0F1E] border border-white/10 px-2 py-1.5 text-white text-sm kanban-add-cat">${opts(KANBAN_OPTS.category)}</select>
+                <select class="w-full rounded-lg bg-[#0A0F1E] border border-white/10 px-2 py-1.5 text-white text-sm kanban-add-pri">${opts(KANBAN_OPTS.priority)}</select>
+                <select class="w-full rounded-lg bg-[#0A0F1E] border border-white/10 px-2 py-1.5 text-white text-sm kanban-add-trk">${opts(KANBAN_OPTS.track)}</select>
+                <input type="date" class="w-full rounded-lg bg-white/5 border border-white/10 px-2 py-1.5 text-white text-sm kanban-add-due" />
+                <div class="flex gap-2 pt-1">
+                    <button type="button" class="flex-1 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-sm kanban-add-save" data-status="${status}">Save</button>
+                    <button type="button" class="flex-1 py-1.5 rounded-lg border border-white/20 text-sm kanban-add-cancel">Cancel</button>
+                </div>`;
+        }
+
+        function initKanbanUi() {
+            [['todo', 'todo'], ['doing', 'in_progress'], ['done', 'done']].forEach(([key, st]) => {
+                const wrap = document.getElementById('add-wrap-' + key);
+                wrap.innerHTML = buildInlineForm(st);
+                wrap.querySelector('.kanban-add-save').addEventListener('click', async () => {
+                    const title = wrap.querySelector('.kanban-add-title').value.trim();
+                    if (!title) return;
+                    const body = {
+                        title,
+                        category: wrap.querySelector('.kanban-add-cat').value,
+                        priority: wrap.querySelector('.kanban-add-pri').value,
+                        trackStatus: wrap.querySelector('.kanban-add-trk').value,
+                        status: st,
+                        dueDate: wrap.querySelector('.kanban-add-due').value || '',
+                    };
+                    await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                    wrap.classList.add('hidden');
+                    wrap.querySelector('.kanban-add-title').value = '';
+                    await loadKanbanTasks();
+                });
+                wrap.querySelector('.kanban-add-cancel').addEventListener('click', () => wrap.classList.add('hidden'));
+            });
+            document.querySelectorAll('[data-add-open]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const k = btn.getAttribute('data-add-open');
+                    const wrap = document.getElementById('add-wrap-' + k);
+                    wrap.classList.remove('hidden');
+                });
+            });
+            document.getElementById('kanban-filter-category').addEventListener('change', renderKanban);
+            document.getElementById('kanban-filter-priority').addEventListener('change', renderKanban);
+            document.getElementById('task-edit-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('edit-task-id').value;
+                const body = {
+                    id,
+                    title: document.getElementById('edit-title').value.trim(),
+                    category: document.getElementById('edit-category').value,
+                    priority: document.getElementById('edit-priority').value,
+                    trackStatus: document.getElementById('edit-track').value,
+                    status: document.getElementById('edit-status').value,
+                    dueDate: document.getElementById('edit-due').value || '',
+                };
+                await fetch('/api/tasks', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                closeEditModal();
+                await loadKanbanTasks();
+            });
+            document.getElementById('edit-cancel').addEventListener('click', closeEditModal);
+            document.getElementById('task-edit-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'task-edit-modal') closeEditModal();
+            });
+        }
+
+        // Load data on page load
+        async function loadDashboardData() {
             try {
                 openClawConfig = await loadConfigFromPath() || getMockConfig();
                 sessionData = await loadSessionData();
                 activityData = await loadActivityData();
                 
+                console.log('✅ LOADED REAL DATA:', sessionData);
+                
+                renderDashboard();
                 renderAgents();
-                renderConfiguration();
-                updateStats();
-                renderActivityFeed();
-                renderTaskStatistics();
-                renderModelUsage();
+                renderCosts();
+                
             } catch (error) {
-                console.error('Failed to load OpenClaw data:', error);
-                // Use mock data on error
-                openClawConfig = getMockConfig();
+                console.error('❌ Failed to load data:', error);
+                sessionData = null;
+                renderDashboard();
                 renderAgents();
-                renderConfiguration();
-                updateStats();
             }
         }
 
-        // Load configuration from file system (when running locally)
+        // Load configuration from API
         async function loadConfigFromPath() {
             try {
-                // This will work when served from local file system
-                const response = await fetch('/Users/fari/.openclaw/openclaw.json');
+                const response = await fetch('/openclaw-config');
                 if (response.ok) {
                     return await response.json();
                 }
             } catch (e) {
-                // Fallback for web serving - try relative path
-                try {
-                    const response = await fetch('/.openclaw/openclaw.json');
-                    if (response.ok) {
-                        return await response.json();
-                    }
-                } catch (e2) {
-                    console.log('Config file not accessible, using mock data');
-                }
+                console.log('Config not accessible, using mock data');
             }
             return null;
         }
 
-        // Load session data from OpenClaw session files
+        // Load REAL session data from API
         async function loadSessionData() {
             try {
-                const response = await fetch('/Users/fari/.openclaw/agents/saia/sessions/sessions.json');
+                const response = await fetch('/session-data');
                 if (response.ok) {
-                    return await response.json();
+                    const data = await response.json();
+                    console.log('📊 REAL SESSION DATA:', data);
+                    return data;
                 }
             } catch (e) {
-                console.log('Session data not accessible');
+                console.error('Failed to load session data:', e);
             }
             return null;
         }
 
-        // Load activity data from session logs
+        // Load activity data from API
         async function loadActivityData() {
-            // For now, return mock activity data since parsing JSONL files requires server-side processing
-            return [
-                { timestamp: new Date().toISOString(), agent: 'saia', task: 'Mediterranean Content Build', model: 'ollama/gemma4:31b', status: 'completed' },
-                { timestamp: new Date(Date.now() - 300000).toISOString(), agent: 'primary-worker', task: 'SEO Research Analysis', model: 'ollama/qwen3.5:122b-a10b', status: 'running' },
-                { timestamp: new Date(Date.now() - 600000).toISOString(), agent: 'coding', task: 'Dashboard Enhancement', model: 'google/gemini-2.5-flash', status: 'completed' }
-            ];
+            try {
+                const response = await fetch('/activity-data');
+                if (response.ok) {
+                    return await response.json();
+                }
+            } catch (e) {
+                console.error('Failed to load activity data:', e);
+            }
+            return [];
         }
 
         // Mock configuration fallback
         function getMockConfig() {
             return {
-                agents: {
-                    list: [
-                        {
-                            id: "saia",
-                            name: "SAIA",
-                            model: { primary: "anthropic/claude-sonnet-4-20250514" },
-                            subagents: { model: "ollama/gemma4:31b" }
-                        },
-                        {
-                            id: "fari-code",
-                            name: "fari-code",
-                            model: "google/gemini-2.5-flash"
-                        }
-                    ]
-                },
-                models: {
-                    providers: {
-                        anthropic: {
-                            models: [
-                                { id: "claude-sonnet-4-20250514", name: "Claude Sonnet 4", cost: { input: 3, output: 15 } }
-                            ]
-                        },
-                        ollama: {
-                            models: [
-                                { id: "gemma4:31b", name: "Gemma 4 31B (Local)", cost: { input: 0, output: 0 } },
-                                { id: "qwen3.5:122b-a10b", name: "Qwen 3.5 122B-A10B (Local)", cost: { input: 0, output: 0 } }
-                            ]
-                        },
-                        google: {
-                            models: [
-                                { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", cost: { input: 0.075, output: 0.3 } }
-                            ]
-                        }
-                    }
-                }
+                agents: { list: [] },
+                models: { providers: {} }
             };
         }
 
-        // Render agents section with predefined agent cards
+        // Render dashboard with REAL DATA
+        function renderDashboard() {
+            if (!sessionData) {
+                console.log('⚠️ No session data, showing fallback');
+                return;
+            }
+
+            // Update stats with real data
+            document.getElementById('active-agents-count').textContent = sessionData.totalAgents || 0;
+            document.getElementById('total-models-count').textContent = sessionData.totalModels || 0;
+            document.getElementById('dashboard-tasks-today').textContent = sessionData.tasksToday || 0;
+            document.getElementById('dashboard-success-rate').textContent = `${sessionData.successRate || 0}%`;
+            
+            // Update additional stats
+            document.getElementById('dashboard-tasks-week').textContent = sessionData.tasksThisWeek || 0;
+            document.getElementById('dashboard-total-messages').textContent = sessionData.totalMessages || 0;
+            document.getElementById('dashboard-most-active-name').textContent = sessionData.mostActiveAgent?.name || 'None';
+            document.getElementById('dashboard-most-active-tasks').textContent = `${sessionData.mostActiveAgent?.tasks || 0} tasks`;
+
+            // Render real model distribution
+            renderRealModelDistribution();
+            renderActivityFeed();
+        }
+
+        // Render REAL model distribution with glow effects
+        function renderRealModelDistribution() {
+            const grid = document.getElementById('model-distribution-grid');
+            if (!sessionData?.modelDistribution) {
+                grid.innerHTML = '<div class="text-center text-gray-400">No model data available</div>';
+                return;
+            }
+
+            grid.innerHTML = '';
+
+            const colors = {
+                'claude-sonnet-4-20250514': { bg: 'from-purple-500 to-pink-500', text: 'from-purple-400 to-pink-400' },
+                'gemini-2.5-flash': { bg: 'from-cyan-400 to-blue-500', text: 'from-cyan-400 to-blue-400' },
+                'gemma4:31b': { bg: 'from-green-400 to-emerald-500', text: 'from-green-400 to-emerald-400' },
+                'qwen3.5:122b-a10b': { bg: 'from-amber-400 to-orange-500', text: 'from-amber-400 to-orange-400' }
+            };
+            const order = ['claude-sonnet-4-20250514', 'gemini-2.5-flash', 'gemma4:31b', 'qwen3.5:122b-a10b'];
+            const labels = {
+                'claude-sonnet-4-20250514': 'CLAUDE SONNET 4',
+                'gemini-2.5-flash': 'GEMINI 2.5 FLASH',
+                'gemma4:31b': 'GEMMA4 31B',
+                'qwen3.5:122b-a10b': 'QWEN3.5 122B'
+            };
+
+            order.forEach((modelName) => {
+                const percentage = sessionData.modelDistribution[modelName];
+                if (percentage === undefined) return;
+                const card = document.createElement('div');
+                card.className = 'text-center p-4 glassmorphism glow-border rounded-lg relative';
+                
+                const displayName = labels[modelName] || modelName.toUpperCase();
+                
+                const colorScheme = colors[modelName];
+                
+                card.innerHTML = `
+                    <div class="relative z-10">
+                        <div class="text-2xl font-bold bg-gradient-to-r ${colorScheme.text} bg-clip-text text-transparent">${percentage}%</div>
+                        <div class="text-sm text-gray-400 mt-1">${displayName}</div>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        // Render agents with REAL DATA
         function renderAgents() {
             const agentsGrid = document.getElementById('agents-grid');
             if (!agentsGrid) return;
 
             agentsGrid.innerHTML = '';
 
-            Object.entries(agentDefinitions).forEach(([agentKey, agent], index) => {
-                // Get activity data for this agent
-                const agentActivity = activityData.filter(activity => {
-                    if (agentKey === 'saia') return activity.agent === 'saia';
-                    if (agentKey === 'coding') return activity.model?.includes('gemini');
-                    if (agentKey === 'primary-worker') return activity.model?.includes('gemma4');
-                    if (agentKey === 'seo-specialist') return activity.model?.includes('qwen3.5');
-                    return false;
-                });
+            if (!sessionData?.agents) {
+                agentsGrid.innerHTML = '<div class="col-span-2 text-center text-gray-400">No model persona data available</div>';
+                return;
+            }
 
-                const lastActivity = agentActivity[0];
-                const tasksToday = agentActivity.length;
-                const lastActiveTime = lastActivity ? formatTimeAgo(new Date(lastActivity.timestamp)) : 'No activity';
-                const lastTask = lastActivity ? lastActivity.task : 'No recent tasks';
-                
+            sessionData.agents.forEach((agent, index) => {
                 const card = document.createElement('div');
-                card.className = 'glassmorphism rounded-xl p-6 stagger-animation relative overflow-hidden';
+                card.className = 'glassmorphism glow-border rounded-xl p-6 stagger-animation relative overflow-hidden';
                 card.style.animationDelay = `${0.1 * (index + 1)}s`;
-                card.style.border = `1px solid ${agent.glowColor}40`;
-                card.style.boxShadow = `0 0 20px ${agent.glowColor}20`;
-                
-                const statusColor = agent.type === 'local' ? 'text-green-400' : 'text-purple-400';
-                const statusBg = agent.type === 'local' ? 'bg-green-400/20' : 'bg-purple-400/20';
-                
+                card.style.border = `1px solid ${getAgentGlowColor(agent.name)}40`;
+                card.style.boxShadow = `0 0 20px ${getAgentGlowColor(agent.name)}20`;
+
+                const emoji = getAgentEmoji(agent.name);
+                const glowColor = getAgentGlowColor(agent.name);
+                const statusColor = agent.deployment === 'Local' ? 'text-green-400' : 'text-purple-400';
+                const statusBg = agent.deployment === 'Local' ? 'bg-green-400/20' : 'bg-purple-400/20';
+                const lastActivity = agent.lastActivity ? formatTimeAgo(new Date(agent.lastActivity)) : 'No activity';
+
                 card.innerHTML = `
-                    <div class="absolute top-0 right-0 w-20 h-20 opacity-10" style="background: radial-gradient(circle, ${agent.glowColor}, transparent 70%)"></div>
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center space-x-3">
-                            <div class="text-2xl">${agent.emoji}</div>
-                            <div>
-                                <h3 class="text-lg font-semibold">${agent.displayName}</h3>
-                                <p class="text-sm text-gray-400">${agent.role}</p>
+                    <div class="absolute top-0 right-0 w-20 h-20 opacity-10" style="background: radial-gradient(circle, ${glowColor}, transparent 70%)"></div>
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="text-2xl">${emoji}</div>
+                                <div>
+                                    <h3 class="text-lg font-semibold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">${agent.name}</h3>
+                                    <p class="text-sm text-gray-400">${agent.role}</p>
+                                </div>
+                            </div>
+                            <span class="px-2 py-1 text-xs rounded-full ${statusBg} ${statusColor}">${agent.deployment.toUpperCase()}</span>
+                        </div>
+                        <div class="space-y-2 mb-4">
+                            <div class="text-sm">
+                                <span class="text-gray-400">Model:</span>
+                                <span class="text-white text-xs">${agent.model.split('/')[1] || agent.model}</span>
+                            </div>
+                            <div class="text-sm">
+                                <span class="text-gray-400">Last Task:</span>
+                                <span class="text-white text-xs">${agent.lastTask || 'No recent tasks'}</span>
                             </div>
                         </div>
-                        <span class="px-2 py-1 text-xs rounded-full ${statusBg} ${statusColor}">${agent.type.toUpperCase()}</span>
-                    </div>
-                    <div class="space-y-2 mb-4">
-                        <div class="text-sm">
-                            <span class="text-gray-400">Model:</span>
-                            <span class="text-white text-xs">${agent.model.split('/')[1] || agent.model}</span>
-                        </div>
-                        <div class="text-sm">
-                            <span class="text-gray-400">Last Task:</span>
-                            <span class="text-white text-xs">${lastTask}</span>
-                        </div>
-                    </div>
-                    <div class="flex justify-between items-center pt-2 border-t border-white/10">
-                        <div class="text-xs text-gray-400">
-                            <span>${lastActiveTime}</span>
-                        </div>
-                        <div class="text-xs" style="color: ${agent.glowColor}">
-                            <span>${tasksToday} tasks today</span>
+                        <div class="flex justify-between items-center pt-2 border-t border-white/10">
+                            <div class="text-center">
+                                <div class="text-lg font-semibold bg-gradient-to-r ${getAgentGradient(agent.name)} bg-clip-text text-transparent">${agent.tasksToday || 0}</div>
+                                <div class="text-xs text-gray-400">Tasks Today</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs text-gray-400">Last Activity</div>
+                                <div class="text-xs">${lastActivity}</div>
+                            </div>
                         </div>
                     </div>
                 `;
-                
+
                 agentsGrid.appendChild(card);
             });
         }
@@ -566,132 +900,107 @@
         // Render activity feed
         function renderActivityFeed() {
             const activityFeed = document.getElementById('activity-feed');
-            if (!activityFeed || !activityData.length) {
-                if (activityFeed) {
-                    activityFeed.innerHTML = '<div class="text-gray-400 text-sm text-center py-8">No activity data available</div>';
-                }
+            if (!activityFeed) return;
+
+            if (!activityData || activityData.length === 0) {
+                activityFeed.innerHTML = '<div class="text-center text-gray-400">No recent activity found</div>';
                 return;
             }
 
             activityFeed.innerHTML = '';
 
-            activityData.slice(0, 20).forEach(activity => {
-                const agentKey = getAgentKeyFromActivity(activity);
-                const agent = agentDefinitions[agentKey] || agentDefinitions['saia'];
-                const timeAgo = formatTimeAgo(new Date(activity.timestamp));
-                
-                const statusColor = activity.status === 'completed' ? 'text-green-400' : 
-                                  activity.status === 'running' ? 'text-blue-400' : 'text-yellow-400';
-                const statusIcon = activity.status === 'completed' ? '✓' : 
-                                 activity.status === 'running' ? '●' : '⏸';
-                
+            // Render from real activity data
+            activityData.slice(0, 10).forEach(activity => {
                 const item = document.createElement('div');
                 item.className = 'flex items-center space-x-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all';
-                
+
+                const emoji = getActivityEmoji(activity.tool || activity.type || 'unknown');
+                const timeAgo = activity.timestamp ? formatTimeAgo(new Date(activity.timestamp)) : 'Unknown';
+
                 item.innerHTML = `
-                    <div class="text-lg">${agent.emoji}</div>
+                    <div class="text-lg">${emoji}</div>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center space-x-2">
-                            <span class="text-sm font-medium">${activity.task}</span>
-                            <span class="${statusColor} text-xs">${statusIcon}</span>
+                            <span class="text-sm font-medium">${activity.message || activity.tool || 'Activity'}</span>
+                            <span class="text-blue-400 text-xs">•</span>
                         </div>
                         <div class="text-xs text-gray-400">
-                            <span>${agent.displayName}</span>
+                            <span>${activity.agent || 'Agent'}</span>
                             <span class="mx-1">•</span>
                             <span>${timeAgo}</span>
                         </div>
                     </div>
-                    <div class="text-xs text-gray-500">
-                        ${activity.model?.split('/')[1] || activity.model || 'Unknown'}
-                    </div>
                 `;
-                
+
                 activityFeed.appendChild(item);
             });
         }
 
-        // Render task statistics
-        function renderTaskStatistics() {
-            const today = new Date().toDateString();
-            const thisWeek = getWeekStart(new Date());
-            
-            const tasksToday = activityData.filter(a => new Date(a.timestamp).toDateString() === today).length;
-            const tasksThisWeek = activityData.filter(a => new Date(a.timestamp) >= thisWeek).length;
-            const completedTasks = activityData.filter(a => a.status === 'completed').length;
-            const successRate = activityData.length > 0 ? Math.round((completedTasks / activityData.length) * 100) : 0;
-            
-            // Find most active agent
-            const agentCounts = {};
-            activityData.forEach(activity => {
-                const agentKey = getAgentKeyFromActivity(activity);
-                agentCounts[agentKey] = (agentCounts[agentKey] || 0) + 1;
-            });
-            
-            const mostActiveKey = Object.keys(agentCounts).reduce((a, b) => 
-                agentCounts[a] > agentCounts[b] ? a : b, 'saia');
-            const mostActiveAgent = agentDefinitions[mostActiveKey];
-            
-            document.getElementById('tasks-today').textContent = tasksToday || 'N/A';
-            document.getElementById('tasks-week').textContent = tasksThisWeek || 'N/A';
-            document.getElementById('success-rate').textContent = `${successRate}%`;
-            
-            document.getElementById('most-active-emoji').textContent = mostActiveAgent.emoji;
-            document.getElementById('most-active-name').textContent = mostActiveAgent.displayName;
-            document.getElementById('most-active-tasks').textContent = `${agentCounts[mostActiveKey] || 0} tasks`;
-            
-            // Model distribution
-            const localTasks = activityData.filter(a => a.model?.includes('ollama')).length;
-            const totalTasks = activityData.length;
-            const localPercent = totalTasks > 0 ? Math.round((localTasks / totalTasks) * 100) : 0;
-            
-            document.getElementById('local-usage').textContent = `${localPercent}%`;
-            document.getElementById('cloud-usage').textContent = `${100 - localPercent}%`;
-        }
+        // Render costs
+        function renderCosts() {
+            if (!sessionData?.modelDistribution) return;
 
-        // Render model usage table
-        function renderModelUsage() {
-            const table = document.getElementById('model-usage-table');
-            if (!table || !activityData.length) {
-                if (table) {
-                    table.innerHTML = '<tr><td colspan="3" class="text-center py-8 text-gray-400">No usage data available</td></tr>';
-                }
-                return;
-            }
+            let localPercent = 0;
 
-            const modelUsage = {};
-            activityData.forEach(activity => {
-                const agentKey = getAgentKeyFromActivity(activity);
-                const agent = agentDefinitions[agentKey];
-                const key = `${agent.displayName}:${activity.model}`;
-                
-                if (!modelUsage[key]) {
-                    modelUsage[key] = {
-                        agent: agent.displayName,
-                        model: activity.model?.split('/')[1] || activity.model || 'Unknown',
-                        tasks: 0
-                    };
+            const localModels = ['gemma4:31b', 'qwen3.5:122b-a10b'];
+            Object.entries(sessionData.modelDistribution).forEach(([model, percentage]) => {
+                if (localModels.includes(model)) {
+                    localPercent += percentage;
                 }
-                modelUsage[key].tasks++;
             });
 
-            table.innerHTML = Object.values(modelUsage)
-                .sort((a, b) => b.tasks - a.tasks)
-                .map(usage => `
-                    <tr class="border-b border-white/5">
-                        <td class="py-2">${usage.agent}</td>
-                        <td class="py-2 text-xs text-gray-400">${usage.model}</td>
-                        <td class="py-2 text-right">${usage.tasks}</td>
-                    </tr>
-                `).join('');
+            // Show non-dollar metrics only
+            document.getElementById('daily-spend').textContent = sessionData.totalMessages || 0;
+            document.getElementById('local-usage-percent').textContent = `${Math.round(localPercent)}%`;
+            document.getElementById('optimization-score').textContent = `${sessionData.successRate || 0}%`;
         }
 
         // Helper functions
-        function getAgentKeyFromActivity(activity) {
-            if (activity.agent === 'saia') return 'saia';
-            if (activity.model?.includes('gemini')) return 'coding';
-            if (activity.model?.includes('gemma4')) return 'primary-worker';
-            if (activity.model?.includes('qwen3.5')) return 'seo-specialist';
-            return 'saia';
+        function getAgentEmoji(agentName) {
+            switch(agentName) {
+                case 'SAIA Manager': return '🤖';
+                case 'Coding Agent': return '⚡';
+                case 'Primary Worker': return '🔧';
+                case 'SEO Specialist': return '🔍';
+                default: return '🤖';
+            }
+        }
+
+        function getActivityEmoji(tool) {
+            switch(tool) {
+                case 'exec': return '💻';
+                case 'read': return '📖';
+                case 'write': return '✏️';
+                case 'edit': return '📝';
+                case 'web_search': return '🔍';
+                case 'web_fetch': return '🌐';
+                case 'message': return '💬';
+                case 'browser': return '🖥️';
+                case 'sessions_spawn': return '🚀';
+                case 'image_generate': return '🖼️';
+                case 'memory_search': return '🧠';
+                default: return '⚙️';
+            }
+        }
+
+        function getAgentGlowColor(agentName) {
+            switch(agentName) {
+                case 'SAIA Manager': return '#7C3AED';
+                case 'Coding Agent': return '#06B6D4';
+                case 'Primary Worker': return '#10B981';
+                case 'SEO Specialist': return '#F59E0B';
+                default: return '#7C3AED';
+            }
+        }
+        
+        function getAgentGradient(agentName) {
+            switch(agentName) {
+                case 'SAIA Manager': return 'from-purple-400 to-pink-400';
+                case 'Coding Agent': return 'from-cyan-400 to-blue-400';
+                case 'Primary Worker': return 'from-green-400 to-emerald-400';
+                case 'SEO Specialist': return 'from-amber-400 to-orange-400';
+                default: return 'from-purple-400 to-pink-400';
+            }
         }
 
         function formatTimeAgo(date) {
@@ -704,150 +1013,13 @@
             return `${Math.floor(diff / 86400)}d ago`;
         }
 
-        function getWeekStart(date) {
-            const d = new Date(date);
-            const day = d.getDay();
-            const diff = d.getDate() - day;
-            return new Date(d.setDate(diff));
-        }
-
-        // Render configuration
-        function renderConfiguration() {
-            const configDisplay = document.getElementById('config-display');
-            if (!openClawConfig || !configDisplay) return;
-
-            const config = [
-                { key: 'Gateway Port', value: openClawConfig.gateway?.port || '18789' },
-                { key: 'Browser Enabled', value: openClawConfig.browser?.enabled ? 'Yes' : 'No' },
-                { key: 'Heartbeat Interval', value: openClawConfig.agents?.defaults?.heartbeat?.every || '30m' },
-                { key: 'Max Subagents', value: openClawConfig.agents?.defaults?.subagents?.maxConcurrent || '8' },
-                { key: 'LLM Timeout', value: `${openClawConfig.agents?.defaults?.llm?.idleTimeoutSeconds || 120}s` }
-            ];
-
-            configDisplay.innerHTML = config.map(item => `
-                <div class="flex justify-between items-center">
-                    <span class="text-gray-400">${item.key}</span>
-                    <span class="text-white">${item.value}</span>
-                </div>
-            `).join('');
-        }
-
-        // Update statistics
-        function updateStats() {
-            if (!openClawConfig) return;
-
-            const agentCount = Object.keys(agentDefinitions).length;
-            let totalModels = 0;
-            
-            Object.values(openClawConfig.models?.providers || {}).forEach(provider => {
-                totalModels += provider.models?.length || 0;
-            });
-
-            document.getElementById('active-agents-count').textContent = agentCount;
-            document.getElementById('total-models-count').textContent = totalModels;
-        }
-
-        // Initialize charts
-        function initCharts() {
-            // Token Usage Chart
-            const tokenCtx = document.getElementById('tokenChart').getContext('2d');
-            new Chart(tokenCtx, {
-                type: 'line',
-                data: {
-                    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
-                    datasets: [{
-                        label: 'Local Models',
-                        data: [120, 190, 300, 500, 420, 350, 280],
-                        borderColor: '#10B981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        tension: 0.4
-                    }, {
-                        label: 'Cloud APIs',
-                        data: [80, 120, 100, 140, 110, 90, 70],
-                        borderColor: '#7C3AED',
-                        backgroundColor: 'rgba(124, 58, 237, 0.1)',
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { labels: { color: '#9CA3AF' } }
-                    },
-                    scales: {
-                        y: { ticks: { color: '#9CA3AF' }, grid: { color: 'rgba(255,255,255,0.1)' } },
-                        x: { ticks: { color: '#9CA3AF' }, grid: { color: 'rgba(255,255,255,0.1)' } }
-                    }
-                }
-            });
-
-            // Cost Breakdown Chart
-            const costCtx = document.getElementById('costChart').getContext('2d');
-            new Chart(costCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Local Models', 'Claude Sonnet', 'Gemini Flash', 'Other'],
-                    datasets: [{
-                        data: [0, 1.20, 0.87, 0.40],
-                        backgroundColor: ['#10B981', '#7C3AED', '#06B6D4', '#F59E0B'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { 
-                            position: 'bottom',
-                            labels: { color: '#9CA3AF', padding: 20 }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Tab switching functionality
-        document.querySelectorAll('[data-tab]').forEach(tab => {
-            tab.addEventListener('click', () => {
-                // Remove active from all tabs
-                document.querySelectorAll('.pill-tab').forEach(t => t.classList.remove('active'));
-                // Add active to clicked tab
-                tab.classList.add('active');
-
-                // Hide all tab contents
-                document.querySelectorAll('.tab-content').forEach(content => {
-                    content.classList.add('hidden');
-                });
-
-                // Show selected tab content
-                const targetTab = document.getElementById(tab.dataset.tab + '-tab');
-                if (targetTab) {
-                    targetTab.classList.remove('hidden');
-                    
-                    // Trigger stagger animation for cards
-                    const cards = targetTab.querySelectorAll('.stagger-animation');
-                    cards.forEach((card, index) => {
-                        card.style.animation = 'none';
-                        card.style.opacity = '0';
-                        card.style.transform = 'translateY(30px)';
-                        setTimeout(() => {
-                            card.style.animation = `slideInUp 0.8s ease forwards`;
-                            card.style.animationDelay = `${0.1 * (index + 1)}s`;
-                        }, 50);
-                    });
-                }
-            });
-        });
-
-        // Initialize dashboard
         document.addEventListener('DOMContentLoaded', () => {
-            loadOpenClawConfig();
-            initCharts();
+            initKanbanUi();
+            loadDashboardData();
         });
 
-        // Auto-refresh data every 30 seconds
-        setInterval(() => {
-            loadOpenClawConfig();
-        }, 30000);
+        // Refresh data every 2 minutes
+        setInterval(loadDashboardData, 120000);
     </script>
 </body>
 </html>
